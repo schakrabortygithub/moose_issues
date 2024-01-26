@@ -1,0 +1,216 @@
+[GlobalParams]
+  displacements = 'disp_x disp_y'
+[]
+
+[Mesh]
+  [copper]
+    type = GeneratedMeshGenerator
+    nx = 10
+    ny = 10
+    dim = 2
+  []
+  [copper_id]
+    type = SubdomainIDGenerator
+    input = copper
+    subdomain_id = 0
+  []
+  [brass]
+    type = GeneratedMeshGenerator
+    dim = 2
+    nx = 10
+    ny = 10
+  []
+  [brass_id]
+    type = SubdomainIDGenerator
+    input = brass
+    subdomain_id = 1
+  []
+  [sticher]
+    type = StitchedMeshGenerator
+    inputs = 'copper_id brass_id'
+    stitch_boundaries_pairs = 'top bottom'
+  []
+[]
+
+[Modules/TensorMechanics/Master]
+  [copper]
+    strain = SMALL
+    add_variables = true
+    block = 0
+    base_name = copper
+  []
+  [brass]
+    strain = SMALL
+    add_variables = true
+    block = 1
+    base_name = brass
+  []
+[]
+
+[Variables]
+  [./c]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+[]
+
+[Kernels]
+  [./solid_x]
+    type = PhaseFieldFractureMechanicsOffDiag
+    variable = disp_x
+    component = 0
+    c = c
+    block = 1
+    base_name = brass
+  [../]
+  [./solid_y]
+    type = PhaseFieldFractureMechanicsOffDiag
+    variable = disp_y
+    component = 1
+    c = c
+    block = 1
+    base_name = brass
+  [../]
+  [./ACBulk]
+    type = AllenCahn
+    variable = c
+    f_name = F
+    block = 1
+  [../]
+  [./ACInterface]
+    type = ACInterface
+    variable = c
+    kappa_name = kappa_op
+    block = 1
+  [../]
+[]
+
+[BCs]
+    [./ydisp]
+    type = FunctionDirichletBC
+    variable = disp_y
+    boundary = top
+    function = 't'
+  [../]
+
+  [symmy]
+    type = DirichletBC
+    variable = disp_y
+    boundary = bottom
+    value = 0
+  []
+  [symmx]
+    type = DirichletBC
+    variable = disp_x
+    boundary = bottom
+    value = 0
+  []
+[]
+
+[Materials]
+  [./pfbulkmat]
+    type = GenericConstantMaterial
+    prop_names = 'gc_prop l visco'
+    prop_values = '1e-3 0.04 1e-4'
+    block = 1
+  [../]
+  [./define_mobility]
+    type = ParsedMaterial
+    material_property_names = 'gc_prop visco'
+    property_name = L
+    expression = '1.0/(gc_prop * visco)'
+    block = 1
+  [../]
+  [./define_kappa]
+    type = ParsedMaterial
+    material_property_names = 'gc_prop l'
+    property_name = kappa_op
+    expression = 'gc_prop * l'
+    block = 1
+  [../]
+  [./elastic]
+    type = ComputeLinearElasticPFFractureStress
+    c = c
+    E_name = 'elastic_energy'
+    D_name = 'degradation'
+    F_name = 'local_fracture_energy'
+    decomposition_type = strain_spectral
+    block = 1
+    base_name = brass
+  [../]
+  [./degradation]
+    type = DerivativeParsedMaterial
+    property_name = degradation
+    coupled_variables = 'c'
+    expression = '(1.0-c)^2*(1.0 - eta) + eta'
+    constant_names       = 'eta'
+    constant_expressions = '0.0'
+    derivative_order = 2
+    block = 1
+  [../]
+  [./local_fracture_energy]
+    type = DerivativeParsedMaterial
+    property_name = local_fracture_energy
+    coupled_variables = 'c'
+    material_property_names = 'gc_prop l'
+    expression = 'c^2 * gc_prop / 2 / l'
+    derivative_order = 2
+   block = 1
+  [../]
+  [./fracture_driving_energy]
+    type = DerivativeSumMaterial
+    coupled_variables = c
+    sum_materials = 'elastic_energy local_fracture_energy'
+    derivative_order = 2
+    property_name = F
+    block = 1
+  [../]
+     [elasticity_tensor_copper]
+    type = ComputeIsotropicElasticityTensor
+    youngs_modulus = 200e4
+    poissons_ratio = 0.3
+    block = 0
+    base_name = copper
+  [] 
+    [elasticity_tensor_brass]
+    type = ComputeIsotropicElasticityTensor
+    youngs_modulus = 200e4
+    poissons_ratio = 0.3
+    block = 1
+    base_name = brass
+  []
+
+    [./stress]
+  type = ComputeLinearElasticStress
+    block = 0
+    base_name = copper
+  [../]
+[]
+
+
+[Preconditioning]
+  [smp]
+    type = SMP
+    full = true
+  []
+[]
+
+[Executioner]
+  type = Transient
+  solve_type = newton # 'PJFNK'
+  
+  petsc_options_iname = '-ksp_type -pc_type -pc_hypre_type -ksp_gmres_restart  -sub_pc_type  -pc_factor_shift_type '
+  petsc_options_value = 'gmres      hypre   boomeramg     200                     ilu                               NONZERO              '
+
+  nl_abs_tol = 1e-10
+  nl_rel_tol = 1e-10
+  nl_abs_step_tol = 1e-10
+
+  dt = 0.00005
+  num_steps = 10
+[]
+
+[Outputs]
+  exodus = true
+  csv = true
+[]

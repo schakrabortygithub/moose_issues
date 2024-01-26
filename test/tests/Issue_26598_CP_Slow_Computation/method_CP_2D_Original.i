@@ -47,7 +47,6 @@
     variable = disp_y
     boundary = top
     function ='-1.0e-3*t'
-    preset = false
    [../]
   [./rightx]
     type = DirichletBC
@@ -64,20 +63,18 @@
     type = ComputeElasticityTensorCP
     C_ijkl = '43.582e3  15.18e3  15.18e3  43.582e3 15.18e3  43.582e3   14.701e3 14.701e3  14.701e3'
     fill_method = symmetric9
-    #read_prop_user_object = prop_read
+    read_prop_user_object = prop_read
   [../]
    [stress_copper]
     type = ComputeMultipleCrystalPlasticityStress
     crystal_plasticity_models = 'trial_xtalpl'
     tan_mod_type = exact
     maximum_substep_iteration = 10
-    abs_tol = 1.0e-02
-    rtol = 1.0e-02
   []
   [trial_xtalpl]
     type = CrystalPlasticityKalidindiUpdate
     number_slip_systems = 12
-    slip_sys_file_name = ./input_slip_sys.txt
+    slip_sys_file_name = input_slip_sys.txt
     ao = 1.0e-3
     gss_a =5.0
     gss_initial = 5
@@ -100,7 +97,6 @@
 []
 
 [UserObjects]
-#inactive = 'prop_read '
   [./prop_read]
     type = PropertyReadFile
     prop_file_name = 'input_euler.txt'
@@ -129,10 +125,10 @@
   petsc_options_value = 'lu       superlu_dist                 '
   automatic_scaling = true
 
-  nl_rel_tol = 1e-3
+  nl_rel_tol = 1e-8
   nl_abs_tol = 1e-10
   l_max_its = 10
-  dt = 1e-1
+  dt = 1e-2
   end_time = 200.0
 
 []
@@ -147,42 +143,3 @@
   [../]
 []
 
-[AuxVariables]
-  [./pk2_yy]
-    order = CONSTANT
-    family = MONOMIAL
-  [../]
-  [./E_yy]
-    order = CONSTANT
-    family = MONOMIAL
-  [../]
-[]
-
-[AuxKernels]
-  [./Aux_pk2_yy]
-   type = RankTwoAux
-   variable = pk2_yy
-   rank_two_tensor = stress # second_piola_kirchhoff_stress
-   index_j = 1
-   index_i = 1
-  [../]
-  [./Aux_E_yy]
-   type = RankTwoAux
-   variable = E_yy
-   rank_two_tensor = total_strain # total_lagrangian_strain # plastic_strain, total_lagrangian_strain
-   index_j = 1
-   index_i = 1
-   #execute_on = timestep_end
-  [../]
-[]
-
-[Postprocessors]
-  [./Post_pk2_yy]
-    type = ElementAverageValue
-    variable = pk2_yy
-  [../]
-  [./Post_E_yy]
-    type = ElementAverageValue
-    variable = E_yy
-  [../]
-[]
