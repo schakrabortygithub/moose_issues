@@ -80,11 +80,11 @@ temp_print_trace.*
 *.pt
 *.net
 .depend
-*.png
+#*.png
 *.svg
 *.gif
 *.tif
-*.jpg
+#*.jpg
 *.tiff
 *.ps
 *.bmp
