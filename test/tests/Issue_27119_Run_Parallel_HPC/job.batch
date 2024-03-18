@@ -1,0 +1,15 @@
+#!/bin/bash
+#SBATCH --time=16:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=4
+#SBATCH --job-name moose_Discoflux # job name
+#SBATCH --output slurm_%j.log
+#SBATCH --error slurm_%j.err
+#
+# load modulefiles
+source ~/miniforge/etc/profile.d/conda.sh
+conda activate moose
+
+# run the app
+mpirun -n $SLURM_NTASKS  ~/MyRepository/moose_discoflux/moose_discoflux-opt -i ~/MyRepository/moose_discoflux/test/tests/method_CP_DfluxGB.i ~/MyRepository/moose_discoflux/test/tests/Dump_*
+#srun -n $SLURM_NTASKS  ~/MyRepository/moose_discoflux/moose_discoflux-opt -i ~/MyRepository/moose_discoflux/test/tests/method_CP_DfluxGB.i ~/MyRepository/moose_discoflux/test/tests/Dump_*
