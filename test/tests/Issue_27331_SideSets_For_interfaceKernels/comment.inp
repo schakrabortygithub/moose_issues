@@ -1,0 +1,6 @@
+SideSetsAroundSubdomainGenerator will detect all the element faces external to that block. But since you have specified tye 'normal', so it will detect the faces that allign with that normal. 
+See this part of the code in SideSetsAroundSubdomainGenerator.C :
+
+add_to_bdy = (_normal * face_normal >= 1.0 - _normal_tol);
+
+In this particular case with the specified normal, it is the right side face of block=0, conincidently that is also the interface between the block=0 and block=1.

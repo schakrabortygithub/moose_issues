@@ -5,7 +5,7 @@ elem = QUAD4
 
 L=1.0
 B=1.0
-Hor_num=1
+Hor_num=3
 dimension=2
 xn=10
 yn=10
